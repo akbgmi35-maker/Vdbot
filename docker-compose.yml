@@ -1,0 +1,37 @@
+services:
+  # The Local Telegram Bot API Server (Required for >20MB files)
+  telegram-bot-api:
+    image: aiogram/telegram-bot-api:latest
+    environment:
+      TELEGRAM_API_ID: "${TELEGRAM_API_ID}"
+      TELEGRAM_API_HASH: "${TELEGRAM_API_HASH}"
+      TELEGRAM_LOCAL: "true"
+    volumes:
+      - telegram-data:/var/lib/telegram-bot-api
+    restart: always
+
+  # Your Node.js Bot
+  bot:
+    build: .
+    environment:
+      BOT_TOKEN: "${BOT_TOKEN}"
+      # Connect to the local API server container
+      TELEGRAM_API_ROOT: "http://telegram-bot-api:8081"
+      # Public URL of your VPS/Coolify app (e.g., https://my-bot.coolify.app)
+      # Used to generate the m3u8 links
+      PUBLIC_URL: "${PUBLIC_URL}"
+      SUPABASE_URL: "${SUPABASE_URL}"
+      SUPABASE_KEY: "${SUPABASE_KEY}"
+    volumes:
+      # Mount the SAME volume to access downloaded files instantly without re-downloading
+      - telegram-data:/var/lib/telegram-bot-api
+      # Mount a local folder to store encoded HLS files
+      - ./media_output:/usr/src/app/media_output
+    ports:
+      - "3000:3000"
+    depends_on:
+      - telegram-bot-api
+    restart: always
+
+volumes:
+  telegram-data:
